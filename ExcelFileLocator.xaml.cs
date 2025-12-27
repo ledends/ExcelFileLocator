@@ -30,12 +30,37 @@ namespace ExcelFileLocator
         {
             _monitorTimer = new DispatcherTimer
             {
-                Interval = TimeSpan.FromMilliseconds(500) // 每500ms检查一次
+                Interval = TimeSpan.FromMilliseconds(500)
             };
             _monitorTimer.Tick += MonitorTimer_Tick;
         }
 
-        // 浏览文件夹
+        // 显示置顶的MessageBox（只有弹窗置顶，主窗口不置顶）
+        private MessageBoxResult ShowTopmostMessageBox(string message, string title,
+            MessageBoxButton button = MessageBoxButton.OK,
+            MessageBoxImage icon = MessageBoxImage.Information)
+        {
+            // 创建一个临时的隐藏置顶窗口作为MessageBox的owner
+            Window dummyWindow = new Window
+            {
+                WindowStyle = WindowStyle.None,
+                ShowInTaskbar = false,
+                Width = 0,
+                Height = 0,
+                Left = -10000,
+                Top = -10000,
+                Topmost = true  // 只有这个临时窗口置顶
+            };
+
+            dummyWindow.Show();
+
+            MessageBoxResult result = MessageBox.Show(dummyWindow, message, title, button, icon);
+
+            dummyWindow.Close();
+
+            return result;
+        }
+
         private void BrowseFolder_Click(object sender, RoutedEventArgs e)
         {
             var dialog = new System.Windows.Forms.FolderBrowserDialog
@@ -52,29 +77,27 @@ namespace ExcelFileLocator
             }
         }
 
-        // 开始监控
         private void StartMonitoring_Click(object sender, RoutedEventArgs e)
         {
             if (string.IsNullOrEmpty(_targetFolder))
             {
-                MessageBox.Show("请先选择目标文件夹！", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                ShowTopmostMessageBox("请先选择目标文件夹！", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
             if (!Directory.Exists(_targetFolder))
             {
-                MessageBox.Show("选择的文件夹不存在！", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                ShowTopmostMessageBox("选择的文件夹不存在！", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
             try
             {
-                // 获取正在运行的Excel实例
                 _excelApp = (Excel.Application)Marshal2.GetActiveObject("Excel.Application");
 
                 if (_excelApp == null)
                 {
-                    MessageBox.Show("未找到运行中的Excel程序！请先打开Excel文件。", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                    ShowTopmostMessageBox("未找到运行中的Excel程序！请先打开Excel文件。", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
 
@@ -87,15 +110,14 @@ namespace ExcelFileLocator
             }
             catch (COMException)
             {
-                MessageBox.Show("未找到运行中的Excel程序！请先打开Excel文件。", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                ShowTopmostMessageBox("未找到运行中的Excel程序！请先打开Excel文件。", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"无法连接到Excel：{ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                ShowTopmostMessageBox($"无法连接到Excel：{ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
-        // 停止监控
         private void StopMonitoring_Click(object sender, RoutedEventArgs e)
         {
             _monitorTimer.Stop();
@@ -115,7 +137,6 @@ namespace ExcelFileLocator
             AddLog("已停止监控");
         }
 
-        // 定时器检查
         private void MonitorTimer_Tick(object sender, EventArgs e)
         {
             try
@@ -133,7 +154,6 @@ namespace ExcelFileLocator
                     return;
                 }
 
-                // 获取当前选中区域
                 Excel.Range selection = _excelApp.Selection as Excel.Range;
 
                 if (selection == null)
@@ -141,10 +161,8 @@ namespace ExcelFileLocator
                     return;
                 }
 
-                // 检查是否为单个单元格选择（排除范围选择）
                 if (selection.Cells.Count > 1)
                 {
-                    // 范围选择时仅更新状态，不触发查找
                     UpdateExcelStatus();
                     return;
                 }
@@ -152,16 +170,13 @@ namespace ExcelFileLocator
                 string currentAddress = selection.Address;
                 string currentContent = selection.Value?.ToString() ?? "";
 
-                // 更新Excel状态显示
                 UpdateExcelStatus();
 
-                // 如果单元格地址或内容发生变化（单击切换）
                 if (currentAddress != _lastCellAddress || currentContent != _lastCellContent)
                 {
                     _lastCellAddress = currentAddress;
                     _lastCellContent = currentContent;
 
-                    // 执行文件查找
                     if (!string.IsNullOrWhiteSpace(currentContent))
                     {
                         SearchAndSelectFile(currentContent);
@@ -175,7 +190,6 @@ namespace ExcelFileLocator
             }
             catch (COMException)
             {
-                // Excel已关闭，自动停止监控
                 AddLog("Excel已关闭，停止监控");
                 StopMonitoring_Click(null, null);
             }
@@ -185,7 +199,6 @@ namespace ExcelFileLocator
             }
         }
 
-        // 更新Excel状态显示
         private void UpdateExcelStatus()
         {
             try
@@ -217,7 +230,6 @@ namespace ExcelFileLocator
             catch { }
         }
 
-        // 查找并选中文件
         private void SearchAndSelectFile(string searchPattern)
         {
             try
@@ -225,10 +237,9 @@ namespace ExcelFileLocator
                 txtCellContent.Text = $"单元格内容: {searchPattern}";
                 txtSearchPattern.Text = $"查找文件名: *{searchPattern}*";
 
-                // 搜索匹配的文件（文件名包含单元格内容）
                 var matchedFiles = Directory.GetFiles(_targetFolder, "*.*", SearchOption.TopDirectoryOnly)
                     .Where(f => Path.GetFileNameWithoutExtension(f)
-                        .Contains(searchPattern, StringComparison.OrdinalIgnoreCase))
+                        .Equals(searchPattern, StringComparison.OrdinalIgnoreCase))
                     .ToList();
 
                 lstMatchedFiles.Items.Clear();
@@ -242,7 +253,6 @@ namespace ExcelFileLocator
                         lstMatchedFiles.Items.Add($"  • {Path.GetFileName(file)}");
                     }
 
-                    // 在资源管理器中选中第一个匹配的文件
                     string firstFile = matchedFiles.First();
                     SelectFileInExplorer(firstFile);
 
@@ -251,7 +261,7 @@ namespace ExcelFileLocator
                 else
                 {
                     txtMatchResult.Text = "匹配结果: 未找到匹配文件";
-                    MessageBox.Show($"未找到包含 '{searchPattern}' 的文件", "提示",
+                    ShowTopmostMessageBox($"未找到匹配 '{searchPattern}' 的文件", "提示",
                         MessageBoxButton.OK, MessageBoxImage.Information);
                     AddLog($"✗ 未找到匹配 '{searchPattern}' 的文件");
                 }
@@ -262,31 +272,160 @@ namespace ExcelFileLocator
             }
         }
 
-        // 在资源管理器中选中文件
         private void SelectFileInExplorer(string filePath)
         {
             try
             {
                 if (!File.Exists(filePath))
                 {
-                    MessageBox.Show("文件不存在！", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                    ShowTopmostMessageBox("文件不存在！", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
 
-                // 使用 /select 参数：
-                // - 如果该文件夹未在资源管理器中打开，会打开新窗口并选中文件
-                // - 如果该文件夹已在资源管理器中打开，会激活该窗口并选中文件
-                System.Diagnostics.Process.Start("explorer.exe", $"/select,\"{filePath}\"");
+                string folderPath = Path.GetDirectoryName(filePath);
+
+                var explorerWindow = FindExplorerWindow(folderPath);
+
+                if (explorerWindow != null)
+                {
+                    AddLog("资源管理器窗口已打开，激活并选中文件");
+                    ActivateExplorerAndSelectFile(explorerWindow, filePath);
+                }
+                else
+                {
+                    AddLog("打开新的资源管理器窗口");
+                    OpenNewExplorerAndSelectFile(filePath);
+                }
             }
             catch (Exception ex)
             {
                 AddLog($"打开资源管理器时出错: {ex.Message}");
-                MessageBox.Show($"无法打开资源管理器：{ex.Message}", "错误",
+                ShowTopmostMessageBox($"无法打开资源管理器：{ex.Message}", "错误",
                     MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
-        // 清除匹配信息
+        private dynamic FindExplorerWindow(string targetPath)
+        {
+            try
+            {
+                Type shellWindowsType = Type.GetTypeFromProgID("Shell.Application");
+                dynamic shell = Activator.CreateInstance(shellWindowsType);
+
+                string normalizedTarget = Path.GetFullPath(targetPath).TrimEnd('\\').ToLower();
+
+                foreach (dynamic window in shell.Windows())
+                {
+                    try
+                    {
+                        string locationUrl = window.LocationURL;
+                        if (string.IsNullOrEmpty(locationUrl))
+                            continue;
+
+                        if (locationUrl.StartsWith("file:///"))
+                        {
+                            string windowPath = Uri.UnescapeDataString(
+                                locationUrl.Replace("file:///", "").Replace('/', '\\')
+                            ).TrimEnd('\\').ToLower();
+
+                            if (windowPath == normalizedTarget)
+                            {
+                                return window;
+                            }
+                        }
+                    }
+                    catch
+                    {
+                        continue;
+                    }
+                }
+
+                Marshal.ReleaseComObject(shell);
+            }
+            catch (Exception ex)
+            {
+                AddLog($"查找资源管理器窗口时出错: {ex.Message}");
+            }
+
+            return null;
+        }
+
+        private void ActivateExplorerAndSelectFile(dynamic explorerWindow, string filePath)
+        {
+            try
+            {
+                IntPtr hwnd = new IntPtr(explorerWindow.HWND);
+
+                if (NativeMethods.IsIconic(hwnd))
+                {
+                    NativeMethods.ShowWindow(hwnd, NativeMethods.SW_RESTORE);
+                }
+
+                NativeMethods.SetForegroundWindow(hwnd);
+                NativeMethods.BringWindowToTop(hwnd);
+
+                System.Threading.Thread.Sleep(100);
+
+                SelectFileUsingShellAPI(filePath);
+            }
+            catch (Exception ex)
+            {
+                AddLog($"激活窗口时出错: {ex.Message}");
+                OpenNewExplorerAndSelectFile(filePath);
+            }
+            finally
+            {
+                try
+                {
+                    Marshal.ReleaseComObject(explorerWindow);
+                }
+                catch { }
+            }
+        }
+
+        private void OpenNewExplorerAndSelectFile(string filePath)
+        {
+            System.Diagnostics.Process.Start("explorer.exe", $"/select,\"{filePath}\"");
+        }
+
+        private void SelectFileUsingShellAPI(string filePath)
+        {
+            try
+            {
+                string folderPath = Path.GetDirectoryName(filePath);
+
+                IntPtr folderPidl = NativeMethods.ILCreateFromPath(folderPath);
+                if (folderPidl == IntPtr.Zero)
+                {
+                    OpenNewExplorerAndSelectFile(filePath);
+                    return;
+                }
+
+                IntPtr filePidl = NativeMethods.ILCreateFromPath(filePath);
+                if (filePidl == IntPtr.Zero)
+                {
+                    NativeMethods.ILFree(folderPidl);
+                    OpenNewExplorerAndSelectFile(filePath);
+                    return;
+                }
+
+                try
+                {
+                    IntPtr[] filePidls = new IntPtr[] { filePidl };
+                    NativeMethods.SHOpenFolderAndSelectItems(folderPidl, (uint)filePidls.Length, filePidls, 0);
+                }
+                finally
+                {
+                    NativeMethods.ILFree(folderPidl);
+                    NativeMethods.ILFree(filePidl);
+                }
+            }
+            catch
+            {
+                OpenNewExplorerAndSelectFile(filePath);
+            }
+        }
+
         private void ClearMatchInfo()
         {
             txtCellContent.Text = "单元格内容: -";
@@ -295,13 +434,11 @@ namespace ExcelFileLocator
             lstMatchedFiles.Items.Clear();
         }
 
-        // 添加日志
         private void AddLog(string message)
         {
             string timestamp = DateTime.Now.ToString("HH:mm:ss");
             txtLog.Text += $"[{timestamp}] {message}\n";
 
-            // 自动滚动到底部
             Dispatcher.InvokeAsync(() =>
             {
                 txtLog.CaretIndex = txtLog.Text.Length;
@@ -309,7 +446,6 @@ namespace ExcelFileLocator
             });
         }
 
-        // 窗口关闭时清理资源
         protected override void OnClosed(EventArgs e)
         {
             base.OnClosed(e);
@@ -326,5 +462,39 @@ namespace ExcelFileLocator
                 _excelApp = null;
             }
         }
+    }
+
+    internal static class NativeMethods
+    {
+        public const int SW_RESTORE = 9;
+
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool SetForegroundWindow(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool BringWindowToTop(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool IsIconic(IntPtr hWnd);
+
+        [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+        public static extern IntPtr ILCreateFromPath(string pszPath);
+
+        [DllImport("shell32.dll")]
+        public static extern void ILFree(IntPtr pidl);
+
+        [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+        public static extern int SHOpenFolderAndSelectItems(
+            IntPtr pidlFolder,
+            uint cidl,
+            [In, MarshalAs(UnmanagedType.LPArray)] IntPtr[] apidl,
+            uint dwFlags);
     }
 }

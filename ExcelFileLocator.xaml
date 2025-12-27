@@ -13,7 +13,6 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <!--  监控设置区域  -->
@@ -128,18 +127,5 @@
                     VerticalScrollBarVisibility="Auto" />
             </ScrollViewer>
         </GroupBox>
-
-        <!--  底部按钮  -->
-        <StackPanel Grid.Row="4" Orientation="Horizontal">
-            <Button
-                Width="80"
-                Height="28"
-                Content="设置" />
-            <Button
-                Width="80"
-                Height="28"
-                Margin="5,0,0,0"
-                Content="关于" />
-        </StackPanel>
     </Grid>
 </Window>

@@ -11,15 +11,7 @@
 
   <ItemGroup>
         <PackageReference Include="Microsoft.Office.Interop.Excel" Version="15.0.4795.1001" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Reference Include="Microsoft.Vbe.Interop">
-      <HintPath>C:\Windows\assembly\GAC_MSIL\Microsoft.Vbe.Interop\15.0.0.0__71e9bce111e9429c\Microsoft.Vbe.Interop.dll</HintPath>
-    </Reference>
-    <Reference Include="office">
-      <HintPath>C:\Windows\assembly\GAC_MSIL\office\15.0.0.0__71e9bce111e9429c\office.dll</HintPath>
-    </Reference>
+        <PackageReference Include="MicrosoftOfficeCore" Version="15.0.0" NoWarn="NU1701" />
   </ItemGroup>
 
 </Project>
