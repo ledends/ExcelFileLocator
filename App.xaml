@@ -1,0 +1,8 @@
+﻿<Application
+    x:Class="FileSelector.App"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="clr-namespace:FileSelector"
+    StartupUri="ExcelFileLocator.xaml">
+    <Application.Resources />
+</Application>

@@ -1,0 +1,145 @@
+﻿<Window
+    x:Class="ExcelFileLocator.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Excel文件快速定位工具"
+    Width="700"
+    Height="600"
+    WindowStartupLocation="CenterScreen">
+
+    <Grid Margin="15">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!--  监控设置区域  -->
+        <GroupBox
+            Grid.Row="0"
+            Margin="0,0,0,10"
+            Header="监控设置">
+            <Grid Margin="10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <TextBlock
+                    Grid.Column="0"
+                    Margin="0,0,10,0"
+                    VerticalAlignment="Center"
+                    Text="目标文件夹:" />
+                <TextBox
+                    x:Name="txtFolderPath"
+                    Grid.Column="1"
+                    VerticalAlignment="Center"
+                    Background="#F5F5F5"
+                    IsReadOnly="True" />
+                <Button
+                    Grid.Column="2"
+                    Width="80"
+                    Margin="10,0,0,0"
+                    Click="BrowseFolder_Click"
+                    Content="浏览..." />
+            </Grid>
+        </GroupBox>
+
+        <!--  Excel状态区域  -->
+        <GroupBox
+            Grid.Row="1"
+            Margin="0,0,0,10"
+            Header="Excel状态">
+            <StackPanel Margin="10">
+                <TextBlock
+                    x:Name="txtExcelStatus"
+                    Margin="0,0,0,5"
+                    FontWeight="Bold"
+                    Text="当前Excel: 未连接" />
+                <TextBlock
+                    x:Name="txtFileName"
+                    Margin="10,0,0,3"
+                    Text="├─ 文件名: -" />
+                <TextBlock
+                    x:Name="txtSheetName"
+                    Margin="10,0,0,3"
+                    Text="├─ 工作表: -" />
+                <TextBlock
+                    x:Name="txtCurrentCell"
+                    Margin="10,0,0,10"
+                    Text="└─ 选中单元格: -" />
+
+                <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+                    <Button
+                        x:Name="btnStart"
+                        Width="100"
+                        Height="30"
+                        Margin="5"
+                        Click="StartMonitoring_Click"
+                        Content="开始监控" />
+                    <Button
+                        x:Name="btnStop"
+                        Width="100"
+                        Height="30"
+                        Margin="5"
+                        Click="StopMonitoring_Click"
+                        Content="停止监控"
+                        IsEnabled="False" />
+                </StackPanel>
+            </StackPanel>
+        </GroupBox>
+
+        <!--  匹配信息区域  -->
+        <GroupBox
+            Grid.Row="2"
+            Margin="0,0,0,10"
+            Header="匹配信息">
+            <StackPanel Margin="10">
+                <TextBlock x:Name="txtCellContent" Text="单元格内容: -" />
+                <TextBlock
+                    x:Name="txtSearchPattern"
+                    Margin="0,3,0,3"
+                    Text="查找文件名: -" />
+                <TextBlock x:Name="txtMatchResult" Text="匹配结果: -" />
+                <ListBox
+                    x:Name="lstMatchedFiles"
+                    Height="60"
+                    Margin="10,5,0,0"
+                    Background="Transparent"
+                    BorderThickness="0" />
+            </StackPanel>
+        </GroupBox>
+
+        <!--  操作日志区域  -->
+        <GroupBox
+            Grid.Row="3"
+            Margin="0,0,0,10"
+            Header="操作日志">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <TextBox
+                    x:Name="txtLog"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    IsReadOnly="True"
+                    TextWrapping="Wrap"
+                    VerticalScrollBarVisibility="Auto" />
+            </ScrollViewer>
+        </GroupBox>
+
+        <!--  底部按钮  -->
+        <StackPanel Grid.Row="4" Orientation="Horizontal">
+            <Button
+                Width="80"
+                Height="28"
+                Content="设置" />
+            <Button
+                Width="80"
+                Height="28"
+                Margin="5,0,0,0"
+                Content="关于" />
+        </StackPanel>
+    </Grid>
+</Window>
