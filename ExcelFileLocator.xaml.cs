@@ -356,15 +356,17 @@ namespace ExcelFileLocator
             {
                 IntPtr hwnd = new IntPtr(explorerWindow.HWND);
 
+                // 如果窗口最小化，先恢复
                 if (NativeMethods.IsIconic(hwnd))
                 {
                     NativeMethods.ShowWindow(hwnd, NativeMethods.SW_RESTORE);
                 }
 
-                NativeMethods.SetForegroundWindow(hwnd);
-                NativeMethods.BringWindowToTop(hwnd);
+                // 使用更强大的窗口激活方法
+                ForceWindowToForeground(hwnd);
 
-                System.Threading.Thread.Sleep(100);
+                // 等待窗口激活
+                System.Threading.Thread.Sleep(200);
 
                 SelectFileUsingShellAPI(filePath);
             }
@@ -381,6 +383,17 @@ namespace ExcelFileLocator
                 }
                 catch { }
             }
+        }
+
+        private void ForceWindowToForeground(IntPtr hwnd)
+        {
+            // 显示窗口
+            NativeMethods.ShowWindow(hwnd, NativeMethods.SW_SHOW);
+
+            // 模拟 Alt 键来绕过限制
+            NativeMethods.keybd_event(NativeMethods.VK_MENU, 0, 0, UIntPtr.Zero);
+            NativeMethods.SetForegroundWindow(hwnd);
+            NativeMethods.keybd_event(NativeMethods.VK_MENU, 0, NativeMethods.KEYEVENTF_KEYUP, UIntPtr.Zero);
         }
 
         private void OpenNewExplorerAndSelectFile(string filePath)
@@ -464,37 +477,5 @@ namespace ExcelFileLocator
         }
     }
 
-    internal static class NativeMethods
-    {
-        public const int SW_RESTORE = 9;
-
-        [DllImport("user32.dll")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        public static extern bool SetForegroundWindow(IntPtr hWnd);
-
-        [DllImport("user32.dll")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        public static extern bool BringWindowToTop(IntPtr hWnd);
-
-        [DllImport("user32.dll")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
-
-        [DllImport("user32.dll")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        public static extern bool IsIconic(IntPtr hWnd);
-
-        [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
-        public static extern IntPtr ILCreateFromPath(string pszPath);
-
-        [DllImport("shell32.dll")]
-        public static extern void ILFree(IntPtr pidl);
-
-        [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
-        public static extern int SHOpenFolderAndSelectItems(
-            IntPtr pidlFolder,
-            uint cidl,
-            [In, MarshalAs(UnmanagedType.LPArray)] IntPtr[] apidl,
-            uint dwFlags);
-    }
+    
 }
