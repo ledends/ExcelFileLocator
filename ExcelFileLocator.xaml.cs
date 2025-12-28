@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Input;
 using System.Windows.Threading;
 using Excel = Microsoft.Office.Interop.Excel;
 using MessageBox = System.Windows.MessageBox;
@@ -39,6 +40,42 @@ namespace ExcelFileLocator
         }
 
         #region Event
+
+        // 标题栏拖动
+        private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ChangedButton == MouseButton.Left)
+            {
+                this.DragMove();
+            }
+        }
+
+        // 最小化
+        private void MinimizeButton_Click(object sender, RoutedEventArgs e)
+        {
+            this.WindowState = WindowState.Minimized;
+        }
+
+        // 最大化/还原
+        private void MaximizeButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (this.WindowState == WindowState.Maximized)
+            {
+                this.WindowState = WindowState.Normal;
+                btnMaximize.Content = "☐";
+            }
+            else
+            {
+                this.WindowState = WindowState.Maximized;
+                btnMaximize.Content = "❐";
+            }
+        }
+
+        // 关闭
+        private void CloseButton_Click(object sender, RoutedEventArgs e)
+        {
+            this.Close();
+        }
 
         private void BrowseFolder_Click(object sender, RoutedEventArgs e)
         {
@@ -251,11 +288,11 @@ namespace ExcelFileLocator
             if (defaultResult != MessageBoxResult.None)
             {
                 // 指定默认按钮
-                result = MessageBox.Show(dummyWindow, message, title, button, icon, defaultResult);
+                result = CustomMessageBox.Show(dummyWindow, message, title, button, icon, defaultResult);
             }
             else
             {
-                result = MessageBox.Show(dummyWindow, message, title, button, icon);
+                result = CustomMessageBox.Show(dummyWindow, message, title, button, icon);
             }
 
             dummyWindow.Close();
