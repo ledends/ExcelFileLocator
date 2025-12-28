@@ -294,6 +294,7 @@
                         <Button
                             Click="MinimizeButton_Click"
                             Content="─"
+                            Cursor="Hand"
                             Style="{StaticResource TitleBarButton}"
                             ToolTip="最小化"
                             WindowChrome.IsHitTestVisibleInChrome="True" />
