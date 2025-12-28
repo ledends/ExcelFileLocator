@@ -19,6 +19,9 @@ namespace ExcelFileLocator
         private string _lastCellAddress;
         private string _lastCellContent;
 
+        // 未匹配文件集合
+        private HashSet<string> _unmatchedFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
         public MainWindow()
         {
             InitializeComponent();
@@ -35,31 +38,7 @@ namespace ExcelFileLocator
             _monitorTimer.Tick += MonitorTimer_Tick;
         }
 
-        // 显示置顶的MessageBox（只有弹窗置顶，主窗口不置顶）
-        private MessageBoxResult ShowTopmostMessageBox(string message, string title,
-            MessageBoxButton button = MessageBoxButton.OK,
-            MessageBoxImage icon = MessageBoxImage.Information)
-        {
-            // 创建一个临时的隐藏置顶窗口作为MessageBox的owner
-            Window dummyWindow = new Window
-            {
-                WindowStyle = WindowStyle.None,
-                ShowInTaskbar = false,
-                Width = 0,
-                Height = 0,
-                Left = -10000,
-                Top = -10000,
-                Topmost = true  // 只有这个临时窗口置顶
-            };
-
-            dummyWindow.Show();
-
-            MessageBoxResult result = MessageBox.Show(dummyWindow, message, title, button, icon);
-
-            dummyWindow.Close();
-
-            return result;
-        }
+        #region Event
 
         private void BrowseFolder_Click(object sender, RoutedEventArgs e)
         {
@@ -199,6 +178,91 @@ namespace ExcelFileLocator
             }
         }
 
+        // 复制未匹配文件记录
+        private void CopyUnmatched_Click(object sender, RoutedEventArgs e)
+        {
+            if (_unmatchedFiles.Count == 0)
+            {
+                ShowTopmostMessageBox("未匹配文件记录为空！", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            try
+            {
+                string content = string.Join(Environment.NewLine, _unmatchedFiles.OrderBy(f => f));
+                System.Windows.Clipboard.SetText(content);
+                ShowTopmostMessageBox($"已复制 {_unmatchedFiles.Count} 个未匹配文件名到剪贴板", "成功",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                AddLog($"已复制 {_unmatchedFiles.Count} 个未匹配文件名");
+            }
+            catch (Exception ex)
+            {
+                ShowTopmostMessageBox($"复制失败：{ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                AddLog($"复制失败: {ex.Message}");
+            }
+        }
+
+        // 清空全部（日志和未匹配记录）
+        private void ClearAll_Click(object sender, RoutedEventArgs e)
+        {
+            // 显示确认对话框，默认按钮为"否"
+            MessageBoxResult result = ShowTopmostMessageBox(
+                "是否清空日志和未匹配文件记录？",
+                "确认清空",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question,
+                MessageBoxResult.No);  // 默认选中"否"
+
+            if (result == MessageBoxResult.Yes)
+            {
+                txtLog.Clear();
+                _unmatchedFiles.Clear();
+                txtUnmatchedFiles.Clear();
+                AddLog("日志和未匹配文件记录已清空");
+            }
+        }
+
+        #endregion
+
+        #region Private
+
+        // 显示置顶的MessageBox（只有弹窗置顶，主窗口不置顶）
+        private MessageBoxResult ShowTopmostMessageBox(string message, string title,
+            MessageBoxButton button = MessageBoxButton.OK,
+            MessageBoxImage icon = MessageBoxImage.Information,
+            MessageBoxResult defaultResult = MessageBoxResult.None)
+        {
+            // 创建一个临时的隐藏置顶窗口作为MessageBox的owner
+            Window dummyWindow = new Window
+            {
+                WindowStyle = WindowStyle.None,
+                ShowInTaskbar = false,
+                Width = 0,
+                Height = 0,
+                Left = -10000,
+                Top = -10000,
+                Topmost = true
+            };
+
+            dummyWindow.Show();
+            dummyWindow.Activate();
+
+            MessageBoxResult result;
+            if (defaultResult != MessageBoxResult.None)
+            {
+                // 指定默认按钮
+                result = MessageBox.Show(dummyWindow, message, title, button, icon, defaultResult);
+            }
+            else
+            {
+                result = MessageBox.Show(dummyWindow, message, title, button, icon);
+            }
+
+            dummyWindow.Close();
+
+            return result;
+        }
+
         private void UpdateExcelStatus()
         {
             try
@@ -235,7 +299,7 @@ namespace ExcelFileLocator
             try
             {
                 txtCellContent.Text = $"单元格内容: {searchPattern}";
-                txtSearchPattern.Text = $"查找文件名: *{searchPattern}*";
+                txtSearchPattern.Text = $"查找文件名: {searchPattern}";
 
                 var matchedFiles = Directory.GetFiles(_targetFolder, "*.*", SearchOption.TopDirectoryOnly)
                     .Where(f => Path.GetFileNameWithoutExtension(f)
@@ -261,9 +325,13 @@ namespace ExcelFileLocator
                 else
                 {
                     txtMatchResult.Text = "匹配结果: 未找到匹配文件";
-                    ShowTopmostMessageBox($"未找到匹配 '{searchPattern}' 的文件", "提示",
+
+                    // 添加到未匹配文件记录
+                    AddUnmatchedFile(searchPattern);
+
+                    ShowTopmostMessageBox($"未找到文件名为 '{searchPattern}' 的文件", "提示",
                         MessageBoxButton.OK, MessageBoxImage.Information);
-                    AddLog($"✗ 未找到匹配 '{searchPattern}' 的文件");
+                    AddLog($"✗ 未找到文件名为 '{searchPattern}' 的文件");
                 }
             }
             catch (Exception ex)
@@ -439,6 +507,22 @@ namespace ExcelFileLocator
             }
         }
 
+        // 添加未匹配文件到记录（去重）
+        private void AddUnmatchedFile(string fileName)
+        {
+            if (_unmatchedFiles.Add(fileName))
+            {
+                // 成功添加（之前不存在），更新显示
+                UpdateUnmatchedFilesDisplay();
+            }
+        }
+
+        // 更新未匹配文件显示
+        private void UpdateUnmatchedFilesDisplay()
+        {
+            txtUnmatchedFiles.Text = string.Join(Environment.NewLine, _unmatchedFiles.OrderBy(f => f));
+        }
+
         private void ClearMatchInfo()
         {
             txtCellContent.Text = "单元格内容: -";
@@ -477,5 +561,5 @@ namespace ExcelFileLocator
         }
     }
 
-    
+    #endregion
 }
