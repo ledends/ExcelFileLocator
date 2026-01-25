@@ -338,7 +338,12 @@ namespace ExcelFileLocator
                 txtCellContent.Text = $"单元格内容: {searchPattern}";
                 txtSearchPattern.Text = $"查找文件名: {searchPattern}";
 
-                var matchedFiles = Directory.GetFiles(_targetFolder, "*.*", SearchOption.TopDirectoryOnly)
+                // 根据 Checkbox 状态决定搜索选项
+                SearchOption searchOption = chkIncludeSubfolders.IsChecked == true
+                    ? SearchOption.AllDirectories
+                    : SearchOption.TopDirectoryOnly;
+
+                var matchedFiles = Directory.GetFiles(_targetFolder, "*.*", searchOption)
                     .Where(f => Path.GetFileNameWithoutExtension(f)
                         .Equals(searchPattern, StringComparison.OrdinalIgnoreCase))
                     .ToList();
@@ -351,13 +356,15 @@ namespace ExcelFileLocator
 
                     foreach (var file in matchedFiles)
                     {
-                        lstMatchedFiles.Items.Add($"  • {Path.GetFileName(file)}");
+                        // 显示相对路径，更清晰
+                        string relativePath = GetRelativePath(_targetFolder, file);
+                        lstMatchedFiles.Items.Add($"  • {relativePath}");
                     }
 
-                    string firstFile = matchedFiles.First();
-                    SelectFileInExplorer(firstFile);
+                    // 打开所有匹配文件所在的文件夹并选中文件
+                    SelectMultipleFilesInExplorer(matchedFiles);
 
-                    AddLog($"✓ 找到并定位文件: {Path.GetFileName(firstFile)}");
+                    AddLog($"✓ 找到 {matchedFiles.Count} 个文件并定位");
                 }
                 else
                 {
@@ -374,6 +381,63 @@ namespace ExcelFileLocator
             catch (Exception ex)
             {
                 AddLog($"搜索文件时出错: {ex.Message}");
+            }
+        }
+
+        // 获取相对路径（用于显示）
+        private string GetRelativePath(string fromPath, string toPath)
+        {
+            try
+            {
+                Uri fromUri = new Uri(fromPath.TrimEnd('\\') + "\\");
+                Uri toUri = new Uri(toPath);
+                Uri relativeUri = fromUri.MakeRelativeUri(toUri);
+                return Uri.UnescapeDataString(relativeUri.ToString()).Replace('/', '\\');
+            }
+            catch
+            {
+                return Path.GetFileName(toPath);
+            }
+        }
+
+        // 选中多个文件（在不同文件夹中）
+        private void SelectMultipleFilesInExplorer(List<string> filePaths)
+        {
+            // 按文件夹分组
+            var filesByFolder = filePaths.GroupBy(f => Path.GetDirectoryName(f));
+
+            foreach (var folderGroup in filesByFolder)
+            {
+                string folderPath = folderGroup.Key;
+                var filesInFolder = folderGroup.ToList();
+
+                // 检查该文件夹是否已打开
+                var explorerWindow = FindExplorerWindow(folderPath);
+
+                if (explorerWindow != null)
+                {
+                    // 窗口已打开，激活并选中第一个文件
+                    AddLog($"激活已打开的文件夹: {Path.GetFileName(folderPath)}");
+                    ActivateExplorerAndSelectFile(explorerWindow, filesInFolder.First());
+                }
+                else
+                {
+                    // 打开新窗口并选中第一个文件
+                    AddLog($"打开文件夹: {Path.GetFileName(folderPath)}");
+                    OpenNewExplorerAndSelectFile(filesInFolder.First());
+                }
+
+                // 如果同一文件夹有多个匹配文件，只打开一次窗口并选中第一个
+                if (filesInFolder.Count > 1)
+                {
+                    AddLog($"  该文件夹包含 {filesInFolder.Count} 个匹配文件");
+                }
+
+                // 避免同时打开太多窗口，添加短暂延迟
+                if (filesByFolder.Count() > 1)
+                {
+                    System.Threading.Thread.Sleep(300);
+                }
             }
         }
 

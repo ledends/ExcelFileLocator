@@ -230,6 +230,66 @@
             <Setter Property="Width" Value="10" />
             <Setter Property="Background" Value="#F0F0F0" />
         </Style>
+
+        <!--  Checkbox样式  -->
+        <Style x:Key="ModernCheckBox" TargetType="CheckBox">
+            <Setter Property="Foreground" Value="#2C3E50" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="CheckBox">
+                        <Grid Background="Transparent">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Border
+                                x:Name="CheckBoxBorder"
+                                Grid.Column="0"
+                                Width="18"
+                                Height="18"
+                                Margin="0,0,8,0"
+                                Background="White"
+                                BorderBrush="#D1D8E0"
+                                BorderThickness="2"
+                                CornerRadius="3">
+                                <TextBlock
+                                    x:Name="CheckMark"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    FontFamily="Segoe UI Symbol"
+                                    FontSize="14"
+                                    FontWeight="Bold"
+                                    Foreground="#4A90E2"
+                                    Text="✓"
+                                    Visibility="Collapsed" />
+                            </Border>
+                            <ContentPresenter
+                                Grid.Column="1"
+                                VerticalAlignment="Center"
+                                Content="{TemplateBinding Content}" />
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="CheckMark" Property="Visibility" Value="Visible" />
+                                <Setter TargetName="CheckBoxBorder" Property="Background" Value="#E8F4FF" />
+                                <Setter TargetName="CheckBoxBorder" Property="BorderBrush" Value="#4A90E2" />
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="CheckBoxBorder" Property="BorderBrush" Value="#4A90E2" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="CheckBoxBorder" Property="Background" Value="#F0F0F0" />
+                                <Setter TargetName="CheckBoxBorder" Property="BorderBrush" Value="#CCCCCC" />
+                                <Setter Property="Foreground" Value="#999999" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
 
     <!--  主边框（添加阴影和圆角）  -->
@@ -332,34 +392,51 @@
                     Header="监控设置"
                     Style="{StaticResource ModernGroupBox}">
                     <Grid Margin="8">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
 
-                        <TextBlock
-                            Grid.Column="0"
-                            Margin="0,0,10,0"
-                            VerticalAlignment="Center"
-                            FontSize="13"
-                            Foreground="#2C3E50"
-                            Text="目标文件夹:" />
-                        <TextBox
-                            x:Name="txtFolderPath"
-                            Grid.Column="1"
-                            VerticalAlignment="Center"
-                            Background="#F8F9FA"
-                            IsReadOnly="True"
-                            Style="{StaticResource ModernTextBox}" />
-                        <Button
-                            Grid.Column="2"
-                            Width="90"
-                            Height="32"
-                            Margin="10,0,0,0"
-                            Click="BrowseFolder_Click"
-                            Content="浏览..."
-                            Style="{StaticResource ModernButton}" />
+                        <!--  第一行：文件夹选择  -->
+                        <Grid Grid.Row="0" Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock
+                                Grid.Column="0"
+                                Margin="0,0,10,0"
+                                VerticalAlignment="Center"
+                                FontSize="13"
+                                Foreground="#2C3E50"
+                                Text="目标文件夹:" />
+                            <TextBox
+                                x:Name="txtFolderPath"
+                                Grid.Column="1"
+                                VerticalAlignment="Center"
+                                Background="#F8F9FA"
+                                IsReadOnly="True"
+                                Style="{StaticResource ModernTextBox}" />
+                            <Button
+                                Grid.Column="2"
+                                Width="90"
+                                Height="32"
+                                Margin="10,0,0,0"
+                                Click="BrowseFolder_Click"
+                                Content="浏览..."
+                                Style="{StaticResource ModernButton}" />
+                        </Grid>
+
+                        <!--  第二行：包含子文件夹选项  -->
+                        <CheckBox
+                            x:Name="chkIncludeSubfolders"
+                            Grid.Row="1"
+                            Margin="0,0,0,0"
+                            Content="包含子文件夹"
+                            Style="{StaticResource ModernCheckBox}"
+                            ToolTip="选中后将搜索所有子文件夹中的文件" />
                     </Grid>
                 </GroupBox>
 
